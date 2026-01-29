@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,25 +15,71 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { API_URLS } from '@/config/api';
+import { useToast } from '@/hooks/use-toast';
+
+interface NPACategory {
+  id: number;
+  name: string;
+  icon: string;
+  description: string;
+  docs: number;
+  updated: string | null;
+}
+
+interface RecentDocument {
+  id: number;
+  title: string;
+  type: string;
+  category: string;
+  date: string | null;
+}
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const [npaCategories, setNpaCategories] = useState<NPACategory[]>([]);
+  const [recentDocs, setRecentDocs] = useState<RecentDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadNPAData();
+  }, []);
+
+  const loadNPAData = async () => {
+    try {
+      setLoading(true);
+      const [categoriesRes, recentRes] = await Promise.all([
+        fetch(`${API_URLS.npa}?action=categories`),
+        fetch(`${API_URLS.npa}?action=recent`),
+      ]);
+
+      if (categoriesRes.ok) {
+        const categories = await categoriesRes.json();
+        setNpaCategories(categories);
+      }
+
+      if (recentRes.ok) {
+        const recent = await recentRes.json();
+        setRecentDocs(recent);
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка загрузки данных',
+        description: 'Не удалось загрузить данные НПА',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const stats = [
     { title: 'Актуальных НПА', value: '247', icon: 'FileText', change: '+12 за месяц', color: 'text-primary' },
     { title: 'Сотрудников обучено', value: '89%', icon: 'Users', change: '156 из 175', color: 'text-secondary' },
     { title: 'Документов создано', value: '43', icon: 'FileCheck', change: 'За этот месяц', color: 'text-accent' },
     { title: 'Уведомлений', value: '8', icon: 'Bell', change: 'Требуют внимания', color: 'text-destructive' },
-  ];
-
-  const npaCategories = [
-    { name: 'Трудовой кодекс РФ', docs: 45, updated: '15.01.2026', icon: 'BookOpen' },
-    { name: 'Федеральные законы', docs: 38, updated: '20.01.2026', icon: 'Scale' },
-    { name: 'Приказы Минтруда', docs: 67, updated: '28.01.2026', icon: 'FileText' },
-    { name: 'ГОСТы и СП', docs: 54, updated: '10.01.2026', icon: 'FileStack' },
-    { name: 'СанПиНы', docs: 23, updated: '05.01.2026', icon: 'Heart' },
-    { name: 'Отраслевые нормы', docs: 20, updated: '18.01.2026', icon: 'Factory' },
   ];
 
   const employees = [
@@ -285,28 +331,31 @@ const Index = () => {
                 <CardDescription>Недавно добавленные и измененные документы</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { title: 'Приказ Минтруда №245 от 27.01.2026', type: 'Новый', date: '27.01.2026' },
-                    { title: 'ФЗ-426: изменения в требованиях к СОУТ', type: 'Изменен', date: '25.01.2026' },
-                    { title: 'ГОСТ 12.0.004-2025 "Организация обучения"', type: 'Новый', date: '20.01.2026' },
-                    { title: 'СанПиН 1.2.3685-21: корректировка норм', type: 'Изменен', date: '18.01.2026' },
-                  ].map((doc, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-lg border hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <Icon name="FileText" size={20} className="text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="font-medium">{doc.title}</p>
-                          <p className="text-sm text-muted-foreground mt-1">{doc.date}</p>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-muted-foreground">Загрузка...</div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {recentDocs.map((doc, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-lg border hover:bg-muted transition-colors"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Icon name="FileText" size={20} className="text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="font-medium">{doc.title}</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {doc.category} • {doc.date}
+                            </p>
+                          </div>
                         </div>
+                        <Badge>{doc.type}</Badge>
                       </div>
-                      <Badge variant={doc.type === 'Новый' ? 'default' : 'secondary'}>{doc.type}</Badge>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

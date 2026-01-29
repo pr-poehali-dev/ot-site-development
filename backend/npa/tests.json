@@ -1,0 +1,46 @@
+{
+  "tests": [
+    {
+      "name": "Get NPA categories",
+      "method": "GET",
+      "path": "/?action=categories",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "0": {
+          "id": "number",
+          "name": "string",
+          "icon": "string",
+          "docs": "number"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get recent NPA documents",
+      "method": "GET",
+      "path": "/?action=recent",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "0": {
+          "id": "number",
+          "title": "string",
+          "type": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get all NPA documents",
+      "method": "GET",
+      "path": "/?action=documents",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "0": {
+          "id": "number",
+          "title": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

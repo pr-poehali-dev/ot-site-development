@@ -1,0 +1,3 @@
+export const API_URLS = {
+  npa: 'https://functions.poehali.dev/f440938f-104e-4ef3-86ea-25a63b050495',
+};
